@@ -32,6 +32,44 @@ npm run dev
 
 Open: http://localhost:5173
 
+## Fixing intermittent 3–5s latency spikes in dev
+
+If you see some requests taking ~4s in the browser **while the backend logs show ~10–50ms**,
+the delay is almost always in the **Vite dev proxy / Node DNS resolution** on Windows.
+
+### Option A (recommended): Keep the proxy, force IPv4
+
+1) Use the updated `vite.config.ts` (this repo already forces `ipv4first` and defaults to `127.0.0.1`).
+2) Create `.env` and set:
+
+```bash
+VITE_PROXY_TARGET=http://127.0.0.1:8080
+```
+
+3) Restart Vite:
+
+```bash
+rm -rf node_modules/.vite
+npm run dev
+```
+
+### Option B: Bypass Vite proxy completely
+
+This is the fastest way to prove the proxy is the culprit.
+
+Create `.env`:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8080
+```
+
+Restart Vite. The browser will call the backend directly, so make sure backend CORS allows `http://localhost:5173`.
+
+### How to verify where the 4s is spent
+
+In Firefox/Chrome DevTools → Network → select the slow request → **Timings**.
+If the time is in **Blocked/DNS/Connecting**, it’s client/proxy; if it’s in **Waiting (TTFB)**, it’s backend.
+
 ## E2E tests
 
 ### Default (mocked API, always deterministic)
